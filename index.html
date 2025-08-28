@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html lang="pt">
 <head>
-  <meta charset="UTF-8">
-  <title>Dashboard Sensores + Mapa</title>
-  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
-  <style>
+<meta charset="UTF-8">
+<title>Dashboard Sensores + Mapa + Mercados</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+<style>
     body { margin: 0; font-family: Arial, sans-serif; }
     #map { height: 60vh; }
     #info { padding: 10px; background: #f8f8f8; font-size: 16px; }
@@ -15,52 +15,156 @@
       font-size: 24px;
       transition: transform 0.2s;
     }
-  </style>
+    .supermarket-list {
+      margin-top: 15px;
+      border-top: 1px solid #ddd;
+      padding-top: 10px;
+    }
+    .supermarket-item {
+      display: flex;
+      align-items: center;
+      margin-bottom: 5px;
+      gap: 10px;
+    }
+    .supermarket-icon {
+      font-size: 20px;
+    }
+</style>
 </head>
 <body>
-  <div id="map"></div>
-  <div id="info">
-    <div class="sensor">📍 Localização: <span id="location">Aguardando...</span></div>
-    <div class="sensor">🧭 Bússola: <span id="compass">Aguardando...</span> <span class="compass-arrow" id="arrow">⬆️</span></div>
-    <div class="sensor">📐 Acelerômetro: <span id="motion">Aguardando...</span></div>
-    <div class="sensor">💡 Luz ambiente: <span id="light">Aguardando...</span></div>
-  </div>
-
+<div id="map"></div>
+<div id="info">
+<div class="sensor">📍 Localização: <span id="location">Aguardando...</span></div>
+<div class="sensor">🧭 Bússola: <span id="compass">Aguardando...</span> <span class="compass-arrow" id="arrow">⬆️</span></div>
+<div class="sensor">📐 Acelerômetro: <span id="motion">Aguardando...</span></div>
+<div class="sensor">💡 Luz ambiente: <span id="light">Aguardando...</span></div>
+    ---
+<div class="supermarket-list">
+<h3>🛒 Mercados Próximos</h3>
+<div id="supermarkets">Aguardando localização...</div>
+</div>
+</div>
+ 
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-  <script>
+<script>
     // ==== MAPA LEAFLET ====
     const map = L.map('map').setView([0, 0], 2);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '&copy; OpenStreetMap contributors'
     }).addTo(map);
-
+ 
     const userIcon = L.divIcon({
       html: "📍",
       className: "user-icon",
       iconSize: [24, 24],
       iconAnchor: [12, 12]
     });
-
-    const marker = L.marker([0, 0], { icon: userIcon }).addTo(map);
-
+ 
+    const supermarketIcon = L.divIcon({
+      html: "🛒",
+      className: "supermarket-icon",
+      iconSize: [24, 24],
+      iconAnchor: [12, 12]
+    });
+ 
+    const userMarker = L.marker([0, 0], { icon: userIcon }).addTo(map);
+    const supermarketMarkers = L.featureGroup().addTo(map);
+ 
+    // Variável para armazenar a última localização para evitar pesquisas repetidas
+    let lastKnownLocation = null;
+ 
+    /**
+     * Função para atualizar a localização do usuário no mapa e no painel de informações.
+     * @param {GeolocationPosition} position - O objeto de posição retornado pela API de geolocalização.
+     */
     function updateLocation(position) {
       const lat = position.coords.latitude;
       const lon = position.coords.longitude;
-      marker.setLatLng([lat, lon]);
-      map.setView([lat, lon], 16);
+      const currentPos = `${lat.toFixed(5)}, ${lon.toFixed(5)}`;
       document.getElementById("location").textContent = `Lat: ${lat.toFixed(5)}, Lon: ${lon.toFixed(5)}`;
+ 
+      userMarker.setLatLng([lat, lon]);
+      map.setView([lat, lon], 16);
+ 
+      // Verifica se a localização mudou significativamente antes de pesquisar novamente
+      if (lastKnownLocation === null || (Math.abs(lastKnownLocation.lat - lat) > 0.001 || Math.abs(lastKnownLocation.lon - lon) > 0.001)) {
+        findNearbySupermarkets(lat, lon);
+        lastKnownLocation = { lat, lon };
+      }
     }
-
+ 
+    /**
+     * Função para buscar e exibir mercados próximos usando a API Overpass.
+     * @param {number} lat - A latitude da posição do usuário.
+     * @param {number} lon - A longitude da posição do usuário.
+     */
+    function findNearbySupermarkets(lat, lon) {
+      const resultsDiv = document.getElementById("supermarkets");
+      resultsDiv.textContent = "Buscando mercados...";
+      supermarketMarkers.clearLayers(); // Limpa marcadores anteriores
+ 
+      // A API Overpass é usada para consultar dados do OpenStreetMap
+      const overpassUrl = "https://overpass-api.de/api/interpreter";
+      const overpassQuery = `
+        [out:json][timeout:25];
+        (
+          node["shop"="supermarket"](around:2000, ${lat}, ${lon});
+          way["shop"="supermarket"](around:2000, ${lat}, ${lon});
+          relation["shop"="supermarket"](around:2000, ${lat}, ${lon});
+        );
+        out center;
+      `;
+ 
+      fetch(overpassUrl, {
+        method: 'POST',
+        body: overpassQuery,
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded'
+        }
+      })
+      .then(response => {
+        if (!response.ok) {
+          throw new Error('Erro na resposta da rede: ' + response.statusText);
+        }
+        return response.json();
+      })
+      .then(data => {
+        resultsDiv.innerHTML = ""; // Limpa a mensagem "Buscando..."
+ 
+        if (data.elements.length === 0) {
+          resultsDiv.textContent = "Nenhum mercado encontrado em 2km.";
+          return;
+        }
+ 
+        data.elements.forEach(element => {
+          const name = element.tags.name || "Mercado Desconhecido";
+          const location = [element.lat || element.center.lat, element.lon || element.center.lon];
+          // Adiciona marcador ao mapa
+          const marker = L.marker(location, { icon: supermarketIcon }).addTo(supermarketMarkers);
+          marker.bindPopup(`<b>${name}</b>`);
+          // Adiciona o item à lista
+          const item = document.createElement("div");
+          item.className = "supermarket-item";
+          item.innerHTML = `<span class="supermarket-icon">🛒</span> <span>${name}</span>`;
+          resultsDiv.appendChild(item);
+        });
+      })
+      .catch(error => {
+        resultsDiv.textContent = `Erro ao buscar dados: ${error.message}`;
+        console.error("Erro na busca de mercados:", error);
+      });
+    }
+ 
     function error(err) {
       document.getElementById("location").textContent = "Erro: " + err.message;
     }
-
+ 
     if (navigator.geolocation) {
       navigator.geolocation.watchPosition(updateLocation, error, { enableHighAccuracy: true });
     } else {
       document.getElementById("location").textContent = "Geolocalização não suportada.";
     }
-
+ 
     // ==== BÚSSOLA ====
     if (window.DeviceOrientationEvent) {
       window.addEventListener("deviceorientation", function(event) {
@@ -73,7 +177,7 @@
     } else {
       document.getElementById("compass").textContent = "Não suportado.";
     }
-
+ 
     // ==== ACELERÔMETRO ====
     if (window.DeviceMotionEvent) {
       window.addEventListener("devicemotion", function(event) {
@@ -86,7 +190,7 @@
     } else {
       document.getElementById("motion").textContent = "Não suportado.";
     }
-
+ 
     // ==== SENSOR DE LUZ ====
     if ('AmbientLightSensor' in window) {
       try {
@@ -101,6 +205,6 @@
     } else {
       document.getElementById("light").textContent = "Não suportado.";
     }
-  </script>
+</script>
 </body>
 </html>
