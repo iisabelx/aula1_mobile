@@ -1,13 +1,13 @@
 <!DOCTYPE html>
 <html lang="pt">
 <head>
-<meta charset="UTF-8">
-<title>Dashboard Sensores + Mapa + Mercados</title>
-<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
-<style>
+  <meta charset="UTF-8">
+  <title>Dashboard Sensores + Mapa + Mercados</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
     :root {
       --primary-color: #007bff;
       --background-color: #f0f2f5;
@@ -18,19 +18,19 @@
       --shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
       --border-radius: 12px;
     }
- 
+
     body {
       margin: 0;
       font-family: 'Roboto', sans-serif;
       background-color: var(--background-color);
       color: var(--text-color);
     }
- 
+
     #map {
       height: 60vh;
       border-bottom: 2px solid var(--border-color);
     }
- 
+
     #info {
       padding: 20px;
       background: var(--card-background);
@@ -38,7 +38,7 @@
       border-radius: var(--border-radius);
       margin: 20px;
     }
- 
+
     .section-title {
       font-size: 1.25rem;
       font-weight: 500;
@@ -47,13 +47,13 @@
       border-left: 4px solid var(--primary-color);
       padding-left: 10px;
     }
- 
+
     .sensor-grid {
       display: grid;
       grid-template-columns: 1fr;
       gap: 15px;
     }
- 
+
     .sensor, .supermarket-item {
       display: flex;
       align-items: center;
@@ -63,134 +63,138 @@
       border-radius: 8px;
       box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
     }
- 
+
     .sensor-icon, .supermarket-icon {
       font-size: 1.5rem;
       line-height: 1;
     }
- 
+
     .sensor-value {
       font-weight: 500;
       color: var(--text-color);
     }
+    
     .compass-arrow {
       display: inline-block;
       transform-origin: center;
       font-size: 1.5rem;
       transition: transform 0.2s;
     }
- 
+
     .supermarket-list {
       margin-top: 20px;
     }
- 
+
     .supermarket-item {
       transition: transform 0.2s, box-shadow 0.2s;
+      cursor: pointer; /* Adicionado para indicar que é clicável */
     }
- 
+
     .supermarket-item:hover {
       transform: translateY(-2px);
       box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
     }
- 
+
     .separator {
       height: 1px;
       background-color: var(--border-color);
       margin: 20px 0;
     }
-</style>
+  </style>
 </head>
 <body>
-<div id="map"></div>
-<div id="info">
-<div class="sensor-grid">
-<h2 class="section-title">Dados dos Sensores</h2>
-<div class="sensor">
-<span class="sensor-icon">📍</span>
-<div class="sensor-data">
-<span>Localização:</span>
-<span class="sensor-value" id="location">Aguardando...</span>
-</div>
-</div>
-<div class="sensor">
-<span class="sensor-icon">🧭</span>
-<div class="sensor-data">
-<span>Bússola:</span>
-<span class="sensor-value" id="compass">Aguardando...</span>
-<span class="compass-arrow" id="arrow">⬆️</span>
-</div>
-</div>
-<div class="sensor">
-<span class="sensor-icon">📐</span>
-<div class="sensor-data">
-<span>Acelerômetro:</span>
-<span class="sensor-value" id="motion">Aguardando...</span>
-</div>
-</div>
-<div class="sensor">
-<span class="sensor-icon">💡</span>
-<div class="sensor-data">
-<span>Luz ambiente:</span>
-<span class="sensor-value" id="light">Aguardando...</span>
-</div>
-</div>
-</div>
- 
+  <div id="map"></div>
+  <div id="info">
+    <div class="sensor-grid">
+      <h2 class="section-title">Dados dos Sensores</h2>
+      <div class="sensor">
+        <span class="sensor-icon">📍</span>
+        <div class="sensor-data">
+          <span>Localização:</span>
+          <span class="sensor-value" id="location">Aguardando...</span>
+        </div>
+      </div>
+      <div class="sensor">
+        <span class="sensor-icon">🧭</span>
+        <div class="sensor-data">
+          <span>Bússola:</span>
+          <span class="sensor-value" id="compass">Aguardando...</span>
+          <span class="compass-arrow" id="arrow">⬆️</span>
+        </div>
+      </div>
+      <div class="sensor">
+        <span class="sensor-icon">📐</span>
+        <div class="sensor-data">
+          <span>Acelerômetro:</span>
+          <span class="sensor-value" id="motion">Aguardando...</span>
+        </div>
+      </div>
+      <div class="sensor">
+        <span class="sensor-icon">💡</span>
+        <div class="sensor-data">
+          <span>Luz ambiente:</span>
+          <span class="sensor-value" id="light">Aguardando...</span>
+        </div>
+      </div>
+    </div>
+
     <div class="separator"></div>
- 
+
     <div class="supermarket-list">
-<h2 class="section-title">Mercados Próximos</h2>
-<div id="supermarkets">Aguardando localização...</div>
-</div>
-</div>
- 
+      <h2 class="section-title">Mercados Próximos</h2>
+      <div id="supermarkets">Aguardando localização...</div>
+    </div>
+  </div>
+
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-<script>
+  <script>
     // ==== MAPA LEAFLET ====
     const map = L.map('map').setView([0, 0], 2);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '&copy; OpenStreetMap contributors'
     }).addTo(map);
- 
+
     const userIcon = L.divIcon({
       html: "📍",
       className: "user-icon",
       iconSize: [24, 24],
       iconAnchor: [12, 12]
     });
- 
+
     const supermarketIcon = L.divIcon({
       html: "🛒",
       className: "supermarket-icon",
       iconSize: [24, 24],
       iconAnchor: [12, 12]
     });
- 
+
     const userMarker = L.marker([0, 0], { icon: userIcon }).addTo(map);
     const supermarketMarkers = L.featureGroup().addTo(map);
- 
+
     let lastKnownLocation = null;
- 
+    const markersById = {}; // Novo objeto para armazenar marcadores
+
     function updateLocation(position) {
       const lat = position.coords.latitude;
       const lon = position.coords.longitude;
       const currentPos = `${lat.toFixed(5)}, ${lon.toFixed(5)}`;
       document.getElementById("location").textContent = `Lat: ${lat.toFixed(5)}, Lon: ${lon.toFixed(5)}`;
- 
+
       userMarker.setLatLng([lat, lon]);
       map.setView([lat, lon], 16);
- 
+
       if (lastKnownLocation === null || (Math.abs(lastKnownLocation.lat - lat) > 0.001 || Math.abs(lastKnownLocation.lon - lon) > 0.001)) {
         findNearbySupermarkets(lat, lon);
         lastKnownLocation = { lat, lon };
       }
     }
- 
+
     function findNearbySupermarkets(lat, lon) {
       const resultsDiv = document.getElementById("supermarkets");
       resultsDiv.innerHTML = `<div class="sensor-item">Buscando mercados...</div>`;
       supermarketMarkers.clearLayers();
- 
+      Object.keys(markersById).forEach(key => delete markersById[key]); // Limpa a referência de marcadores
+
       const overpassUrl = "https://overpass-api.de/api/interpreter";
       const overpassQuery = `
         [out:json][timeout:25];
@@ -201,7 +205,7 @@
         );
         out center;
       `;
- 
+
       fetch(overpassUrl, {
         method: 'POST',
         body: overpassQuery,
@@ -217,20 +221,44 @@
       })
       .then(data => {
         resultsDiv.innerHTML = "";
- 
+
         if (data.elements.length === 0) {
           resultsDiv.innerHTML = `<div class="sensor-item">Nenhum mercado encontrado em 2km.</div>`;
           return;
         }
- 
+
         data.elements.forEach(element => {
           const name = element.tags.name || "Mercado Desconhecido";
           const location = [element.lat || element.center.lat, element.lon || element.center.lon];
+          
+          // Constrói o endereço completo com os dados da API, se existirem
+          const street = element.tags['addr:street'] || '';
+          const houseNumber = element.tags['addr:housenumber'] || '';
+          const city = element.tags['addr:city'] || '';
+          let address = `${street} ${houseNumber}`;
+          if (street && city) {
+            address += `, ${city}`;
+          } else if (city) {
+            address = city;
+          }
+
+          // Adiciona marcador ao mapa com um popup interativo
           const marker = L.marker(location, { icon: supermarketIcon }).addTo(supermarketMarkers);
-          marker.bindPopup(`<b>${name}</b>`);
+          const popupContent = `<b>${name}</b><br>${address || 'Endereço não disponível'}`;
+          marker.bindPopup(popupContent);
+          markersById[element.id] = marker; // Armazena o marcador para referência futura
+
+          // Adiciona o item à lista
           const item = document.createElement("div");
           item.className = "supermarket-item";
           item.innerHTML = `<span class="supermarket-icon">🛒</span> <span>${name}</span>`;
+          
+          // Adiciona o evento de clique ao item da lista
+          item.addEventListener('click', () => {
+            map.setView(marker.getLatLng(), 17); // Move o mapa para o marcador
+            marker.openPopup(); // Abre o popup do marcador
+          });
+
           resultsDiv.appendChild(item);
         });
       })
@@ -239,17 +267,17 @@
         console.error("Erro na busca de mercados:", error);
       });
     }
- 
+
     function error(err) {
       document.getElementById("location").textContent = "Erro: " + err.message;
     }
- 
+
     if (navigator.geolocation) {
       navigator.geolocation.watchPosition(updateLocation, error, { enableHighAccuracy: true });
     } else {
       document.getElementById("location").textContent = "Geolocalização não suportada.";
     }
- 
+
     // ==== BÚSSOLA ====
     if (window.DeviceOrientationEvent) {
       window.addEventListener("deviceorientation", function(event) {
@@ -262,7 +290,7 @@
     } else {
       document.getElementById("compass").textContent = "Não suportado.";
     }
- 
+
     // ==== ACELERÔMETRO ====
     if (window.DeviceMotionEvent) {
       window.addEventListener("devicemotion", function(event) {
@@ -275,7 +303,7 @@
     } else {
       document.getElementById("motion").textContent = "Não suportado.";
     }
- 
+
     // ==== SENSOR DE LUZ ====
     if ('AmbientLightSensor' in window) {
       try {
@@ -290,6 +318,6 @@
     } else {
       document.getElementById("light").textContent = "Não suportado.";
     }
-</script>
+  </script>
 </body>
 </html>
