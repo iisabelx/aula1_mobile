@@ -4,43 +4,142 @@
 <meta charset="UTF-8">
 <title>Dashboard Sensores + Mapa + Mercados</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
-    body { margin: 0; font-family: Arial, sans-serif; }
-    #map { height: 60vh; }
-    #info { padding: 10px; background: #f8f8f8; font-size: 16px; }
-    .sensor { margin: 5px 0; }
+    :root {
+      --primary-color: #007bff;
+      --background-color: #f0f2f5;
+      --card-background: #ffffff;
+      --text-color: #333;
+      --secondary-text-color: #666;
+      --border-color: #e0e0e0;
+      --shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      --border-radius: 12px;
+    }
+ 
+    body {
+      margin: 0;
+      font-family: 'Roboto', sans-serif;
+      background-color: var(--background-color);
+      color: var(--text-color);
+    }
+ 
+    #map {
+      height: 60vh;
+      border-bottom: 2px solid var(--border-color);
+    }
+ 
+    #info {
+      padding: 20px;
+      background: var(--card-background);
+      box-shadow: var(--shadow);
+      border-radius: var(--border-radius);
+      margin: 20px;
+    }
+ 
+    .section-title {
+      font-size: 1.25rem;
+      font-weight: 500;
+      color: var(--primary-color);
+      margin-bottom: 15px;
+      border-left: 4px solid var(--primary-color);
+      padding-left: 10px;
+    }
+ 
+    .sensor-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 15px;
+    }
+ 
+    .sensor, .supermarket-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px;
+      background: #f9f9f9;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    }
+ 
+    .sensor-icon, .supermarket-icon {
+      font-size: 1.5rem;
+      line-height: 1;
+    }
+ 
+    .sensor-value {
+      font-weight: 500;
+      color: var(--text-color);
+    }
     .compass-arrow {
       display: inline-block;
       transform-origin: center;
-      font-size: 24px;
+      font-size: 1.5rem;
       transition: transform 0.2s;
     }
+ 
     .supermarket-list {
-      margin-top: 15px;
-      border-top: 1px solid #ddd;
-      padding-top: 10px;
+      margin-top: 20px;
     }
+ 
     .supermarket-item {
-      display: flex;
-      align-items: center;
-      margin-bottom: 5px;
-      gap: 10px;
+      transition: transform 0.2s, box-shadow 0.2s;
     }
-    .supermarket-icon {
-      font-size: 20px;
+ 
+    .supermarket-item:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+ 
+    .separator {
+      height: 1px;
+      background-color: var(--border-color);
+      margin: 20px 0;
     }
 </style>
 </head>
 <body>
 <div id="map"></div>
 <div id="info">
-<div class="sensor">📍 Localização: <span id="location">Aguardando...</span></div>
-<div class="sensor">🧭 Bússola: <span id="compass">Aguardando...</span> <span class="compass-arrow" id="arrow">⬆️</span></div>
-<div class="sensor">📐 Acelerômetro: <span id="motion">Aguardando...</span></div>
-<div class="sensor">💡 Luz ambiente: <span id="light">Aguardando...</span></div>
-    ---
-<div class="supermarket-list">
-<h3>🛒 Mercados Próximos</h3>
+<div class="sensor-grid">
+<h2 class="section-title">Dados dos Sensores</h2>
+<div class="sensor">
+<span class="sensor-icon">📍</span>
+<div class="sensor-data">
+<span>Localização:</span>
+<span class="sensor-value" id="location">Aguardando...</span>
+</div>
+</div>
+<div class="sensor">
+<span class="sensor-icon">🧭</span>
+<div class="sensor-data">
+<span>Bússola:</span>
+<span class="sensor-value" id="compass">Aguardando...</span>
+<span class="compass-arrow" id="arrow">⬆️</span>
+</div>
+</div>
+<div class="sensor">
+<span class="sensor-icon">📐</span>
+<div class="sensor-data">
+<span>Acelerômetro:</span>
+<span class="sensor-value" id="motion">Aguardando...</span>
+</div>
+</div>
+<div class="sensor">
+<span class="sensor-icon">💡</span>
+<div class="sensor-data">
+<span>Luz ambiente:</span>
+<span class="sensor-value" id="light">Aguardando...</span>
+</div>
+</div>
+</div>
+ 
+    <div class="separator"></div>
+ 
+    <div class="supermarket-list">
+<h2 class="section-title">Mercados Próximos</h2>
 <div id="supermarkets">Aguardando localização...</div>
 </div>
 </div>
@@ -70,13 +169,8 @@
     const userMarker = L.marker([0, 0], { icon: userIcon }).addTo(map);
     const supermarketMarkers = L.featureGroup().addTo(map);
  
-    // Variável para armazenar a última localização para evitar pesquisas repetidas
     let lastKnownLocation = null;
  
-    /**
-     * Função para atualizar a localização do usuário no mapa e no painel de informações.
-     * @param {GeolocationPosition} position - O objeto de posição retornado pela API de geolocalização.
-     */
     function updateLocation(position) {
       const lat = position.coords.latitude;
       const lon = position.coords.longitude;
@@ -86,24 +180,17 @@
       userMarker.setLatLng([lat, lon]);
       map.setView([lat, lon], 16);
  
-      // Verifica se a localização mudou significativamente antes de pesquisar novamente
       if (lastKnownLocation === null || (Math.abs(lastKnownLocation.lat - lat) > 0.001 || Math.abs(lastKnownLocation.lon - lon) > 0.001)) {
         findNearbySupermarkets(lat, lon);
         lastKnownLocation = { lat, lon };
       }
     }
  
-    /**
-     * Função para buscar e exibir mercados próximos usando a API Overpass.
-     * @param {number} lat - A latitude da posição do usuário.
-     * @param {number} lon - A longitude da posição do usuário.
-     */
     function findNearbySupermarkets(lat, lon) {
       const resultsDiv = document.getElementById("supermarkets");
-      resultsDiv.textContent = "Buscando mercados...";
-      supermarketMarkers.clearLayers(); // Limpa marcadores anteriores
+      resultsDiv.innerHTML = `<div class="sensor-item">Buscando mercados...</div>`;
+      supermarketMarkers.clearLayers();
  
-      // A API Overpass é usada para consultar dados do OpenStreetMap
       const overpassUrl = "https://overpass-api.de/api/interpreter";
       const overpassQuery = `
         [out:json][timeout:25];
@@ -129,20 +216,18 @@
         return response.json();
       })
       .then(data => {
-        resultsDiv.innerHTML = ""; // Limpa a mensagem "Buscando..."
+        resultsDiv.innerHTML = "";
  
         if (data.elements.length === 0) {
-          resultsDiv.textContent = "Nenhum mercado encontrado em 2km.";
+          resultsDiv.innerHTML = `<div class="sensor-item">Nenhum mercado encontrado em 2km.</div>`;
           return;
         }
  
         data.elements.forEach(element => {
           const name = element.tags.name || "Mercado Desconhecido";
           const location = [element.lat || element.center.lat, element.lon || element.center.lon];
-          // Adiciona marcador ao mapa
           const marker = L.marker(location, { icon: supermarketIcon }).addTo(supermarketMarkers);
           marker.bindPopup(`<b>${name}</b>`);
-          // Adiciona o item à lista
           const item = document.createElement("div");
           item.className = "supermarket-item";
           item.innerHTML = `<span class="supermarket-icon">🛒</span> <span>${name}</span>`;
@@ -150,7 +235,7 @@
         });
       })
       .catch(error => {
-        resultsDiv.textContent = `Erro ao buscar dados: ${error.message}`;
+        resultsDiv.innerHTML = `<div class="sensor-item">Erro ao buscar dados: ${error.message}</div>`;
         console.error("Erro na busca de mercados:", error);
       });
     }
